@@ -1,0 +1,3 @@
+pip install --upgrade transformers
+pip install matplotlib Flask
+pip install --upgrade torch torchvision torchaudio

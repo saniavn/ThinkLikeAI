@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>How AI Thinks: Next Word Prediction & Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background-color: #d1f9fa; /* Light blue background */
+        background-image: url('{{ url_for('static', filename='images/Nov141111.jpg') }}');
+        background-size: cover;
+        background-repeat: no-repeat;
+        color: black;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh; /* Full viewport height */
+        overflow: hidden;
+    }
+    h1.page-title {
+        text-align: center;
+        font-size: 28px;
+        margin-top: 0px; /* Moves title lower */
+        padding-bottom: 0px;
+        color: black;
+        width: 100%;
+    }
+    h2 {
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px; /* Add some space below */
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1.3fr 2.2fr;
+    gap: 20px;
+    width: 95%;
+    max-width: 1400px;  /* Wider container */
+    height: 85vh;
+    border-radius: 8px;
+    padding: 0px;
+    align-items: flex-start;
+
+}
+
+#inputContainer{
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    height: 600px;
+    overflow: hidden;
+    background-color: #ffd685;
+}
+#chartContainer{
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: 15px;
+   background-color: #ffffff;
+   border-radius: 8px;
+   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+   height: 600px;
+   overflow: hidden;
+   background-color: #ffd685;
+}
+#inputContainer {
+    margin-left: -38px;
+  }
+
+#chartContainer {
+    justify-content: flex-start;
+    text-align: center;
+}
+
+#chartContainer h1 {
+    margin-bottom: 10px; /* Push the chart downward */
+    text-align: center;
+    width: 100%;
+}
+.next-button-container {
+    display: flex;
+    justify-content: flex-end; /* Aligns the button to the right */
+     width: 95%;
+     position: absolute;
+    padding-right: -50px;
+    margin-top: 650px;
+    margin-right: 30px;
+    right: 40px;
+    /* position: relative; */
+}
+
+#nextPageButton {
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+    outline: none;
+}
+
+#nextPageButton:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+textarea {
+    width: 90%;
+    height: 100px;
+    padding: 10px;
+    font-size: 16px;
+    /* border: 2px solid #ccc; */
+    border: 2px solid #ffe08a;
+    border-radius: 4px;
+    overflow: auto;
+    resize: none;
+}
+
+button, select {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+select {
+    width: auto;
+    padding: 4px 5px;
+    margin-bottom: 10px;
+}
+
+.token {
+    padding: 2px 5px;
+    margin: 2px;
+    border-radius: 5px;
+    display: inline-block;
+    color: white;
+}
+
+
+#responseDisplay {
+    width: 90%;
+    height: 200px; /* Fixed height */
+    overflow-y: auto;
+    border: 2px solid #ccc;
+    padding: 10px;
+    background-color: #f8f8f8;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+#tokenDisplay {
+    width: 93%;
+    min-height: 89px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: white;
+    border: 2px solid #ffe08a;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: left;
+    line-height: 1.4;
+    display: block;
+    margin-top: -10px;
+}
+.token-box {
+  background-color: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 4px;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#predictedTokenDisplay {
+  margin-top: -10px;
+  width: 90%;
+  min-height: 60px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  background-color: white !important;
+  border: 2px solid #ffe08a;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: left;
+  line-height: 1.4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+
+#logoutContainer {
+    position: absolute;
+    top: 15px; /* Distance from top */
+    right: 20px;
+}
+
+#logoutButton {
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #ff4d4d; /* Red color for logout */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#logoutButton:hover {
+    background-color: #cc0000; /* Darker red on hover */
+}
+
+@media (max-width: 1200px) {
+    .container {
+        grid-template-columns: 1fr 1.8fr 1fr;
+    }
+}
+
+@media (max-width: 992px) {
+    .container {
+        grid-template-columns: 1fr; /* Stack containers vertically */
+        height: 300px;
+    }
+    #inputContainer, #chartContainer{
+        width: 90%;
+        height: 300px;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        width: 100%;
+        gap: 10px;
+    }
+    textarea {
+        width: 100%;
+    }
+}
+@media (max-width: 768px) {
+    h2 {
+        font-size: 18px;
+    }
+}
+/* Style for the chart box */
+#chartBox {
+    width: 90%;
+    max-width: 600px;
+    height: 400px; /* Fixed height for the chart */
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+
+
+
+/* Tokens */
+.token {
+    padding: 6px 10px;
+    margin: 5px;
+    border-radius: 6px;
+    background: #f0f8ff;
+    color: black;
+    font-size: 14px;
+    display: inline-block;
+    border: 1px solid #ccc;
+}
+.parameter-box {
+    width: 90%;
+    max-width:500px;
+    height: 80px;
+    background-color: #ffffff; /* White background */
+    border: 2px solid #ffe08a;
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    margin-bottom: 5px;
+    text-align: center;
+     margin-top: -5px;
+}
+
+.parameter-box h3 {
+    margin-top: -4px;
+    padding-top: 4px;
+    margin-bottom: 2px;
+    font-size: 16px;
+    color: #007BFF;
+}
+
+.parameter-row {
+    display: flex;
+    justify-content: space-between;  /* Aligns items evenly */
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Form Groups (Labels & Inputs) */
+.parameter-box .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* Auto-Complete Button */
+.auto-complete-btn {
+  margin-bottom: 5px;
+  margin-top: -10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    background-color: #28a745;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.auto-complete-btn:hover {
+    background-color: #218838;;
+    transform: scale(1.05);
+}
+
+/* Chart Box: Reduced Height */
+#chartBox {
+    width: 90%;
+    max-width: 500px;
+    height: 320px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.slider-value {
+    font-weight: bold;
+    min-width: 30px;
+}
+#seedInput {
+    width: 80px; /* Set a fixed width */
+    padding: 5px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+
+/* Reduce Spacing Above Title */
+#inputContainer h2 {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+/* Temperature & P-Value in a Row */
+.slider-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px; /* Space between sliders */
+    width: 100%;
+}
+
+/* Sliders inside the row */
+.slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Reduce Width for Compact Design */
+.slider-row input[type="range"] {
+    width: 120px;
+}
+
+.slider-value {
+    font-weight: bold;
+    min-width: 30px;
+}
+
+#userTextInput.form-group {
+    margin-top: 10px;
+}
+
+/* Add spacing to all form groups but increase it for "Your Input" */
+#inputContainer .form-group {
+    margin-bottom: 0px;
+}
+#inputContainer .form-group label {
+    margin-bottom: 0px;
+    font-size: 14px;
+}
+
+
+#userTextInput.form-group {
+    margin-top: 40px;
+}
+.left-parameter-box {
+    width: 90%;
+    max-width: 500px;
+    background-color: #ffffff; /* White background */
+    /* border: 2px solid black;  */
+    border: 2px solid #ffe08a;
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+    padding: 2px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+/* Title inside the Left Parameter Box */
+.left-parameter-box h3 {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+    font-size: 16px;
+    color: black;
+}
+
+/* Organize sliders inside the box */
+.left-parameter-box .slider-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px; /* Space between sliders */
+    width: 100%;
+}
+
+/* Adjust slider layout */
+.left-parameter-box .slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Reduce Width for Compact Design */
+.left-parameter-box input[type="range"] {
+    width: 120px;
+}
+
+.slider-value {
+    font-weight: bold;
+    min-width: 30px;
+}
+left-parameter-box .slider-row label {
+    font-size: 12px !important;
+}
+
+/* Add spacing below parameter box */
+#userTextInput {
+    margin-top: 20px;
+}
+
+.slider-row label, .slider-value {
+      font-size: 14px !important;
+}
+/* Tooltip Container */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 5px;
+    color: #007BFF;
+}
+
+/* Tooltip Text (Hidden by Default) */
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background-color: #007BFF;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+}
+
+
+
+/* Tooltip Arrow */
+.tooltip .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+/* Show Tooltip on Hover */
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+
+  </style>
+
+</head>
+<body>
+
+  <h1 class="page-title">
+  What’s
+  <img src="{{ url_for('static', filename='images/Gemini2.png') }}" alt="AI" style="vertical-align: middle; width: 60px; height: auto; margin: 0 4px;">
+Thinking? Change It  and Find Out!
+</h1>
+
+
+
+
+
+  <div class="container">
+
+    <div id="inputContainer">
+      <h2>Type & see what AI thinks comes next!</h2>
+
+      <form action="/predict" method="post">
+        <input type="hidden" id="input_source" name="input_source" value="typed">
+
+          <div class="form-group">
+              <label for="Model">Select your model:</label>
+              <select id="Model" name="model">
+                  <option value="gpt2">GPT-2</option>
+                  <option value="gpt2-medium">GPT-2 Medium</option>
+                  <option value="gpt-neo">GPT-Neo 1.3B</option>
+              </select>
+          </div>
+
+          <div class="left-parameter-box">
+    <h3>Parameter Settings</h3>
+    <div class="slider-row">
+        <div class="form-group">
+            <label for="temperature">Temperature:
+              <span class="tooltip">❓
+            <span class="tooltip-text">Low = AI plays it safe. It chooses words that are most likely. High = AI is more creative and random. It might pick less expected words.</span>
+        </span></label>
+            <div class="slider-wrapper">
+                <input type="range" id="temperature" name="temperature" min="0" max="1" step="0.01" value="0.7"
+                       oninput="this.nextElementSibling.innerText = this.value">
+                <span class="slider-value">0.7</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="pValue">Top-P:
+            <span class="tooltip">❓
+          <span class="tooltip-text">AI starts with the most likely word and adds more choices until their total chance reaches the p-value (like 90%).<br>
+  Sometimes, one word is enough — if it's very likely! </span>
+
+      </span></label>
+            <div class="slider-wrapper">
+                <input type="range" id="pValue" name="p_value" min="0" max="1" step="0.01" value="0.5"
+                       oninput="this.nextElementSibling.innerText = this.value">
+                <span class="slider-value">0.5</span>
+            </div>
+        </div>
+    </div>
+</div>
+          <div class="form-group">
+              <label for="userTextInput">Enter your sentence here:</label>
+              <textarea id="userTextInput" name="text" placeholder="Type your sentence..." required></textarea>
+          </div>
+
+          <button type="submit">Predict the Next Word</button>
+      </form>
+
+
+      <h3>Token IDs:
+
+        <span class="tooltip">❓
+        <span class="tooltip-text">
+            <b>Did you know?</b> Computers don’t read words like we do! <br><br>
+            Instead, they break words into <b>tokens</b>—small pieces of words. <br><br>
+            Some words stay whole, like <b>"cat"</b>, but longer or rarer words might get split, like: <br>
+            <i>"preexisting"</i> → <b>"pre" + "exist" + "ing"</b>. <br><br>
+            Each token gets a unique number called a <b>Token ID</b>. AI uses these IDs to predict the next word!
+        </span>
+    </span>
+      </h3>
+      <div id="tokenDisplay"></div>
+  </div>
+
+  <div id="chartContainer">
+      <h2>Look at AI’s guesses: Sampling distribution of suggested next word</h2>
+
+
+
+<p id="aiOptionsNote" style="display: none; text-align: center; font-size: 12px; font-style: italic; color: green; margin-top: -5px; margin-bottom: 10px;">
+  *Note: You have three options — (1) Click on a word from the bar chart, (2) Type your own word, or (3) Let AI decide for you.*
+</p>
+
+
+<button type="button" id="aiButton" onclick="autoComplete()" class="auto-complete-btn" style="display: none;">Let AI Decide</button>
+
+
+      <div id="chartBox">
+          <canvas id="resultChart"></canvas>
+      </div>
+
+      <h3>Predicted Tokens and Their IDs:</h3>
+      <div id="predictedTokenDisplay"></div>
+  </div>
+
+  <div class="next-button-container">
+      <button id="nextPageButton" onclick="goToChat()">Next →</button>
+  </div>
+
+
+
+  <div id="questionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+       background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+      <div style="background: white; padding: 20px; border-radius: 10px; width: 80%; max-width: 500px;">
+          <h3>Quick Questions</h3>
+          <label>4. Now, can you explain what a "token" means in AI? </label><br>
+          <textarea id="q4" rows="3" style="width: 90%; margin-bottom: 10px; border: 2px solid black;"></textarea>
+          <label>5.Have you heard the word "prompt" in AI? What do you think it means?</label><br>
+<textarea id="q5" rows="3" style="width: 90%; margin-bottom: 10px; border: 2px solid black;"></textarea>
+
+
+
+
+          <button onclick="submitAnswers()" style="display: block; margin: 15px auto 0;">Submit Answers</button>
+
+      </div>
+  </div>
+
+    <script>
+let inputSource = "typed";
+
+document.getElementById('userTextInput').addEventListener('input', function() {
+    inputSource = "typed";
+     document.getElementById("input_source").value = "typed"; //
+});
+
+    function goToChat() {
+        const userId = localStorage.getItem("user_id");
+
+        if (!userId) {
+            console.error("No user_id found! Redirecting to login.");
+            window.location.href = "/";
+            return;
+        }
+
+        //  Show the modal before navigating
+        const modal = document.getElementById("questionModal");
+        if (modal) {
+            modal.style.display = "flex";
+        } else {
+            alert("Modal not found.");
+        }
+    }
+    async function submitAnswers() {
+        const q4 = document.getElementById("q4").value.trim();
+        const q5 = document.getElementById("q5").value.trim();
+        const userId = localStorage.getItem("user_id");
+
+        if (!q4.trim() ||!q5.trim() ) {
+            alert("Please answer the question before continuing.");
+            return;
+        }
+
+        try {
+            const response = await fetch("/save_questions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    q4: q4,
+                    q5: q5
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save question");
+            }
+
+            // Go to the next page
+            window.location.href = `/build_prompt?user_id=${userId}`;
+
+        } catch (error) {
+            console.error("Error saving q3:", error);
+            alert("There was an error saving your answer.");
+        }
+    }
+
+
+
+
+document.getElementById('temperature').addEventListener('input', function() {
+    this.nextElementSibling.innerText = this.value;
+});
+
+
+  // Add dynamic value display for the temperature slider
+  document.getElementById('temperature').oninput = function() {
+      this.nextElementSibling.value = this.value;
+  };
+
+  document.querySelector('form').onsubmit = async function(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+
+      // Retrieve user_id from localStorage
+      let userId = localStorage.getItem("user_id");
+      if (userId) {
+          formData.append("user_id", userId);  // Add user_id to form data
+      } else {
+          console.error("No user_id found! Ensure login session is stored correctly.");
+      }
+
+      // Capture both temperatures, p-value, and seed
+      const temperatureElement = document.getElementById('temperature');
+      const chartTemperatureElement = document.getElementById('tempSlider');
+      const pValueElement = document.getElementById('pValue');
+      const seedElement = document.getElementById('seedInput');
+
+      if (temperatureElement) {
+          formData.append('temperature', parseFloat(temperatureElement.value));
+      }
+
+      if (chartTemperatureElement) {
+          formData.append('temp_slider', parseFloat(chartTemperatureElement.value));
+      }
+
+      if (pValueElement) {
+          formData.append('p_value', parseFloat(pValueElement.value));
+      }
+
+      if (seedElement) {
+          formData.append('seed', parseInt(seedElement.value));
+      }
+
+      const response = await fetch('/predict', {
+          method: 'POST',
+          body: formData
+      });
+
+      const result = await response.json();
+      console.log("Full API Response:", result);  // Debugging Output
+
+
+
+      if (result.predicted_tokens.length > 0 && result.probabilities.length > 0) {
+    displayInputTokens(result.input_tokens, result.input_token_ids);
+    displayPredictedTokens(result.predicted_tokens, result.predicted_token_ids);
+    renderChart(result.predicted_tokens, result.probabilities);
+
+    // Show AI note and button after prediction
+    document.getElementById("aiOptionsNote").style.display = "block";
+    document.getElementById("aiButton").style.display = "inline-block";
+} else {
+    console.warn("No predictions received. Check backend filtering logic.");
+    alert("No predictions available. Try adjusting P-value.");
+}
+
+  };
+
+
+
+
+function displayInputTokens(tokens, tokenIds) {
+    const inputTokenDisplay = document.getElementById('tokenDisplay'); // Left container
+    inputTokenDisplay.innerHTML = '';  // Clear previous tokens
+
+    tokens.forEach((token, index) => {
+        const cleanedToken = formatToken(token); // Use the formatToken function to clean the token word
+
+        const tokenElement = document.createElement('span');
+        tokenElement.classList.add('token-box');
+        tokenElement.innerHTML = `<b>${token}</b> (ID: ${tokenIds[index]})`;
+        tokenElement.innerHTML = `<b>${cleanedToken}</b> <span style="color: black;">(ID: ${tokenIds[index]})</span>`;
+        //rainbow
+        tokenElement.style.backgroundColor = getRainbowColor(index, tokens.length);
+        tokenElement.style.color = 'black';
+        // tokenElement.style.marginRight = '8px';
+        inputTokenDisplay.appendChild(tokenElement);
+    });
+}
+
+
+function displayPredictedTokens(tokens, tokenIds) {
+    const predictedDisplay = document.getElementById('predictedTokenDisplay'); // Under chart
+    predictedDisplay.innerHTML = '';  // Clear previous tokens
+
+    tokens.forEach((token, index) => {
+        const tokenElement = document.createElement('span');
+        tokenElement.classList.add('token-box');
+        tokenElement.innerHTML = `<b>${token}</b> <span style="color: black;">(ID: ${tokenIds[index]})</span>`;
+        //rainbow
+        tokenElement.style.backgroundColor = getRainbowColor(index, tokens.length);
+        tokenElement.style.color = 'black';
+        // tokenElement.style.marginRight = '8px'; added the box and remove this
+        predictedDisplay.appendChild(tokenElement);
+    });
+}
+
+
+
+  function formatToken(token) {
+    return token.replace(/^Ġ|_+/, '');  // Remove both "Ġ" and "_" markers if present
+}
+
+
+  function getRainbowColor(index, total) {
+      let hue = (index / total) * 360;
+      return `hsl(${hue}, 100%, 85%)`;
+  }
+
+  function renderChart(tokens, probabilities) {
+      var ctx = document.getElementById('resultChart').getContext('2d');
+      if (window.barChart) {
+          window.barChart.destroy();
+      }
+      window.barChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: tokens.map(token => formatToken(token)),
+              datasets: [{
+                  label: 'Probability',
+                  data: probabilities,
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1
+              }]
+          },
+          options: {
+              scales: {
+                  y: {
+                      beginAtZero: true
+                  }
+              },
+              onClick: async function(evt, item) {
+                  if (item.length) {
+                      const index = item[0].index;
+                      const selectedWord = this.data.labels[index];
+                      const textBox = document.getElementById('userTextInput');
+                      textBox.value += ' ' + selectedWord;
+
+                      inputSource = "clicked";
+                      document.getElementById("input_source").value = "clicked";
+
+
+                      // Get all parameter values
+                      const model = document.getElementById("Model").value;
+                      const temperature = parseFloat(document.getElementById("temperature").value);
+                      const tempSlider = parseFloat(document.getElementById("tempSlider").value);
+                      const pValue = parseFloat(document.getElementById("pValue").value);
+                      const seed = parseInt(document.getElementById("seedInput").value);
+
+                      // Send data to backend
+                      await fetch('/save_interaction', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                              user_id: localStorage.getItem("user_id"),
+                              interaction_type: "clicked",
+                              selection_method: "clicked",  // Mark this as chart-clicked
+                              input_text: textBox.value,
+                              selected_word: selectedWord,
+                              model: model,
+                              temperature: temperature,
+                              chart_temperature: tempSlider,
+                              p_value: pValue,
+                              seed: seed
+                          })
+                      });
+                  }
+              }
+          }
+      });
+  }
+
+
+
+  function logout() {
+          window.location.href = "/"; // Redirect to the login page
+      }
+
+
+
+      function seededRandom(seed) {
+          let x = Math.sin(seed) * 10000;
+          return x - Math.floor(x);
+      }
+
+
+      function monteCarloSampling(tokens, probabilities, temperature, top_p) {
+          if (tokens.length === 0 || probabilities.length === 0) {
+              console.error(" No tokens or probabilities provided.");
+              return null;
+          }
+
+          // Step 1: Apply Temperature Scaling (Affects randomness)
+          let scaledProbs = probabilities.map(p => Math.exp(Math.log(p + 1e-8) / temperature)); // Ensure all probabilities are nonzero
+          let sumScaled = scaledProbs.reduce((a, b) => a + b, 0);
+          let normalizedProbs = scaledProbs.map(p => p / sumScaled); // Ensure total sum = 1
+
+          // Step 2: Apply Top-P Filtering (Nucleus Sampling)
+          let sortedIndices = [...normalizedProbs.keys()].sort((a, b) => normalizedProbs[b] - normalizedProbs[a]); // Sort high → low
+          let cumulativeSum = 0;
+          let filteredTokens = [];
+          let filteredProbs = [];
+
+          for (let i of sortedIndices) {
+              cumulativeSum += normalizedProbs[i];
+              filteredTokens.push(tokens[i]);
+              filteredProbs.push(normalizedProbs[i]);
+              if (cumulativeSum >= top_p) break; // Stop when reaching P-value threshold
+          }
+
+          //  Ensure at least one word is available
+          if (filteredTokens.length === 0) {
+              console.warn(" All words removed by filtering. Using most probable word.");
+              return tokens[probabilities.indexOf(Math.max(...probabilities))];  // Return the most probable word
+          }
+
+          //  Normalize Again After Filtering
+          let filteredSum = filteredProbs.reduce((a, b) => a + b, 0);
+          let finalProbs = filteredProbs.map(p => p / filteredSum);
+
+          // True Probabilistic Selection
+          let rand = Math.random();
+          let cumulative = 0;
+
+          for (let i = 0; i < finalProbs.length; i++) {
+              cumulative += finalProbs[i];
+              if (rand <= cumulative) {
+                  console.log(`Selected word: ${filteredTokens[i]} (Randomized)`);
+                  return filteredTokens[i]; // Selects word based on probability
+              }
+          }
+
+          console.warn(" Random selection failed. Returning highest probability word.");
+          return filteredTokens[0];
+      }
+
+
+
+  async function autoComplete() {
+      let temperature = parseFloat(document.getElementById("temperature").value);  r
+      let model = document.getElementById("Model").value;
+      let pValue = parseFloat(document.getElementById("pValue").value);
+
+      let tokenElements = document.querySelectorAll("#predictedTokenDisplay span b");
+      let probabilityElements = document.querySelectorAll("#predictedTokenDisplay span");
+
+      let tokens = Array.from(tokenElements).map(el => el.innerText);
+      let probabilities = Array.from(probabilityElements).map(el => {
+          let match = el.innerText.match(/\((\d+\.?\d*)%\)/);
+          return match ? parseFloat(match[1]) / 100 : 0;
+      });
+
+      if (tokens.length === 0 || probabilities.length === 0) {
+          alert("No predictions available for auto-completion!");
+          return;
+      }
+
+      let selectedWord = monteCarloSampling(tokens, probabilities, temperature, pValue);
+
+      if (selectedWord) {
+          let textBox = document.getElementById("userTextInput");
+          textBox.value += " " + selectedWord;
+          inputSource = "auto-selected";
+          document.getElementById("input_source").value = "auto-selected";
+
+
+          // Send interaction data to backend
+          await fetch('/save_interaction', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  user_id: localStorage.getItem("user_id"),
+                  interaction_type: "auto-selected",
+                  selection_method: "auto-selected",
+                  input_text: textBox.value,
+                  selected_word: selectedWord,
+                  model: model,
+                  temperature: temperature,
+                  p_value: pValue
+              })
+          });
+
+      } else {
+          alert("Error selecting word!");
+      }
+  }
+
+  function getRainbowColor(index, total) {
+      let hue = (index / total) * 360;
+      return `hsl(${hue}, 100%, 85%)`;
+  }
+
+
+</script>
+
+</body>
+</html>
