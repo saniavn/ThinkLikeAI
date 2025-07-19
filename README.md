@@ -5,7 +5,7 @@ An interactive web app that introduces **middle school students** to the **proba
 pip install -r requirements.txt
 
 # Set your OpenAI API key if you would like to test the prompt modual
-Edit app.py= openai.api_key = 'your-api-key-here'
+Edit app.py:  openai.api_key = 'your-api-key-here'
 
 # Run the app
 app.py
